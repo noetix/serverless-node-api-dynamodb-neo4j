@@ -1,0 +1,149 @@
+service: example-api
+
+plugins:
+  - serverless-webpack
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules:
+      forceExclude:
+        - aws-sdk
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  memorySize: 128
+  versionFunctions: false
+  environment:
+    USERS_TABLE: users
+    POSTS_TABLE: posts
+    NEO4J_URI:
+      Fn::Join:
+        - ""
+        - - "bolt://"
+          - Fn::GetAtt: [ GraphDatabaseInstance, PublicIp ]
+          - ":7687"
+    NEO4J_USERNAME: neo4j
+    NEO4J_PASSWORD:
+      Ref: GraphDatabaseInstance
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource:
+        - "*"
+
+functions:
+  addUser:
+    handler: src/handlers/addUser.default
+    events:
+      - http:
+          path: /users
+          method: post
+  getUsers:
+    handler: src/handlers/getUsers.default
+    events:
+      - http:
+          path: /users
+          method: get
+  addPost:
+    handler: src/handlers/addPost.default
+    events:
+      - http:
+          path: /posts
+          method: post
+  getPosts:
+    handler: src/handlers/getPosts.default
+    events:
+      - http:
+          path: /posts
+          method: get
+  load:
+    handler: src/handlers/load.default
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt: [ UsersTable, StreamArn ]
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt: [ PostsTable, StreamArn ]
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+
+    PostsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.POSTS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+
+    GraphDatabaseSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Database server
+        GroupName: GraphDatabase
+        SecurityGroupIngress:
+          -
+            IpProtocol: tcp
+            FromPort: 7473
+            ToPort: 7473
+            CidrIp: 0.0.0.0/0
+          -
+            IpProtocol: tcp
+            FromPort: 7474
+            ToPort: 7474
+            CidrIp: 0.0.0.0/0
+          -
+            IpProtocol: tcp
+            FromPort: 7687
+            ToPort: 7687
+            CidrIp: 0.0.0.0/0
+
+    GraphDatabaseInstance:
+      Type: AWS::EC2::Instance
+      Properties:
+        InstanceType: t2.micro
+        ImageId: ami-0aeebc5d17c06beff
+        SecurityGroupIds:
+          - Ref: GraphDatabaseSecurityGroup
+
+  Outputs:
+    GraphDatabaseUrl:
+      Value:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt: [ GraphDatabaseInstance, PublicIp ]
+            - ":7473/"
+    GraphDatabaseUsername:
+      Value: ${self:provider.environment.NEO4J_USERNAME}
+    GraphDatabasePassword:
+      Value: ${self:provider.environment.NEO4J_PASSWORD}

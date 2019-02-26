@@ -1,0 +1,41 @@
+{
+  "name": "serverless-node-api-dynamodb-neo4j",
+  "version": "1.0.0",
+  "description": "Serverless example writing DynamoDB event data to Neo4J.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "dynamodb",
+    "neo4j",
+    "cqrs"
+  ],
+  "author": {
+    "name": "Alex Joyce",
+    "email": "im@alex-joyce.com",
+    "url": "http://alex-joyce.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.410.0",
+    "capitalize": "^2.0.0",
+    "dynamodb-marshaler": "^2.0.0",
+    "lodash.hasin": "^4.5.2",
+    "neo4j-driver": "^1.7.2",
+    "parse-neo4j": "^0.6.11",
+    "pluralize": "^7.0.0",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.3.4",
+    "@babel/preset-env": "^7.3.4",
+    "babel-core": "^7.0.0-beta.3",
+    "babel-loader": "^8.0.5",
+    "serverless-webpack": "^5.2.0",
+    "webpack": "^4.29.5",
+    "webpack-node-externals": "^1.7.2"
+  }
+}
